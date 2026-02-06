@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Resume Builder - PDF Download</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background: linear-gradient(135deg, #f5f7fa 0%, #e4edf5 100%); padding: 20px; color: #333; line-height: 1.6; }
+    .container { max-width: 1200px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 25px; }
+    .form-section { flex: 1; min-width: 300px; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.08); }
+    .preview-section { flex: 1; min-width: 300px; display: flex; flex-direction: column; align-items: center; }
+    h1 { text-align: center; margin: 20px 0; color: #2c3e50; font-size: 2.2rem; }
+    h2 { color: #3498db; margin: 15px 0 10px; border-bottom: 2px solid #eee; padding-bottom: 8px; }
+    label { display: block; margin: 12px 0 6px; font-weight: 600; color: #2c3e50; }
+    input, textarea { width: 100%; padding: 12px; margin: 5px 0; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; }
+    textarea { min-height: 100px; resize: vertical; }
+    button { background: #3498db; color: white; border: none; padding: 14px 25px; font-size: 18px; border-radius: 8px; cursor: pointer; margin-top: 10px; width: 100%; transition: all 0.3s; font-weight: 600; }
+    button:hover { background: #2980b9; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+    button:active { transform: translateY(0); }
+    #resume-preview { width: 210mm; min-height: 297mm; background: white; padding: 40px; box-shadow: 0 0 20px rgba(0,0,0,0.15); margin-top: 20px; position: relative; }
+    .resume-title { font-size: 2.4rem; color: #2c3e50; margin-bottom: 8px; text-align: center; }
+    .resume-subtitle { text-align: center; color: #3498db; margin-bottom: 25px; font-size: 1.3rem; }
+    .section { margin: 20px 0; }
+    .section-title { font-size: 1.5rem; color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 5px; margin-bottom: 12px; }
+    .contact-info { text-align: center; margin: 15px 0; font-size: 1.05rem; color: #555; }
+    .experience-item, .education-item { margin-bottom: 15px; }
+    .job-title, .degree { font-weight: bold; color: #2c3e50; }
+    .company, .university { color: #3498db; }
+    .date { color: #e74c3c; font-style: italic; }
+    .skills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+    .skill-tag { background: #e3f2fd; padding: 4px 10px; border-radius: 15px; font-size: 0.9rem; }
+    .loading { display: none; text-align: center; margin-top: 15px; color: #3498db; font-weight: 500; }
+    .footer { text-align: center; margin-top: 25px; color: #7f8c8d; font-size: 0.95rem; }
+    @media print { body { background: white; } .form-section, .footer { display: none; } #resume-preview { box-shadow: none; width: 100%; } }
+    @media (max-width: 768px) { .container { flex-direction: column; } #resume-preview { width: 100%; } }
+  </style>
+</head>
+<body>
+  <h1>📄 आसान रिज़्यूमे बिल्डर (Resume Builder)</h1>
+  
+  <div class="container">
+    <!-- Form Section -->
+    <div class="form-section">
+      <h2>📝 अपना डेटा भरें</h2>
+      
+      <label for="name">पूरा नाम (Full Name)</label>
+      <input type="text" id="name" placeholder="राहुल शर्मा" oninput="updateResume()">
+      
+      <label for="title">पदनाम (Job Title)</label>
+      <input type="text" id="title" placeholder="सॉफ्टवेयर इंजीनियर" oninput="updateResume()">
+      
+      <label for="email">ईमेल (Email)</label>
+      <input type="email" id="email" placeholder="rahul@email.com" oninput="updateResume()">
+      
+      <label for="phone">फ़ोन (Phone)</label>
+      <input type="tel" id="phone" placeholder="+91 9876543210" oninput="updateResume()">
+      
+      <label for="linkedin">LinkedIn (वैकल्पिक)</label>
+      <input type="url" id="linkedin" placeholder="linkedin.com/in/rahulsharma" oninput="updateResume()">
+      
+      <label for="summary">सारांश (Summary)</label>
+      <textarea id="summary" placeholder="अपने बारे में 2-3 लाइनें..." oninput="updateResume()"></textarea>
+      
+      <label for="experience">अनुभव (Experience) - प्रत्येक को नई लाइन में लिखें</label>
+      <textarea id="experience" placeholder="कंपनी, पद, तिथि&#10;प्रमुख उपलब्धियाँ" oninput="updateResume()"></textarea>
+      
+      <label for="education">शिक्षा (Education) - प्रत्येक को नई लाइन में लिखें</label>
+      <textarea id="education" placeholder="विश्वविद्यालय, डिग्री, तिथि&#10;विवरण" oninput="updateResume()"></textarea>
+      
+      <label for="skills">कौशल (Skills) - कॉमा से अलग करें (जैसे: Python, टीम लीडरशिप, हिंदी)</label>
+      <input type="text" id="skills" placeholder="JavaScript, प्रोजेक्ट मैनेजमेंट, संचार" oninput="updateResume()">
+      
+      <button onclick="downloadPDF()">📥 PDF में डाउनलोड करें</button>
+      <div class="loading" id="loading">PDF बन रहा है... कृपया प्रतीक्षा करें</div>
+    </div>
+    
+    <!-- Preview Section -->
+    <div class="preview-section">
+      <h2>👀 पूर्वावलोकन (Preview)</h2>
+      <div id="resume-preview">
+        <div class="resume-title" id="preview-name">राहुल शर्मा</div>
+        <div class="resume-subtitle" id="preview-title">सॉफ्टवेयर इंजीनियर</div>
+        <div class="contact-info" id="preview-contact">
+          📧 rahul@email.com | 📱 +91 9876543210 | 🔗 linkedin.com/in/rahulsharma
+        </div>
+        
+        <div class="section">
+          <div class="section-title">सारांश</div>
+          <div id="preview-summary">प्रतिभाशाली सॉफ्टवेयर इंजीनियर जिन्हें उच्च-गुणवत्ता वाले कोड लिखने और टीम के साथ मिलकर काम करने में अनुभव है। नवीनतम तकनीकों के प्रति उत्सुक।</div>
+        </div>
+        
+        <div class="section">
+          <div class="section-title">अनुभव</div>
+          <div class="experience-item">
+            <div class="job-title">टेक सॉल्यूशंस प्राइवेट लिमिटेड</div>
+            <div class="company">सीनियर डेवलपर</div>
+            <div class="date">जनवरी 2020 - वर्तमान</div>
+            <div>प्रमुख प्रोजेक्ट्स पर काम किया, टीम को मेंटर किया, और प्रदर्शन में 30% सुधार किया।</div>
+          </div>
+        </div>
+        
+        <div class="section">
+          <div class="section-title">शिक्षा</div>
+          <div class="education-item">
+            <div class="degree">बी.टेक इन कंप्यूटर साइंस</div>
+            <div class="university">दिल्ली विश्वविद्यालय</div>
+            <div class="date">2016 - 2020</div>
+          </div>
+        </div>
+        
+        <div class="section">
+          <div class="section-title">कौशल</div>
+          <div class="skills" id="preview-skills">
+            <span class="skill-tag">JavaScript</span>
+            <span class="skill-tag">React</span>
+            <span class="skill-tag">Python</span>
+            <span class="skill-tag">टीम लीडरशिप</span>
+            <span class="skill-tag">हिंदी</span>
+            <span class="skill-tag">अंग्रेज़ी</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="footer">
+    💡 टिप: फॉर्म भरते ही रिज़्यूमे अपडेट होगा। "PDF में डाउनलोड करें" बटन दबाकर PDF सेव करें।<br>
+    ✨ कोई डेटा सर्वर पर सेव नहीं होता — सभी प्रोसेसिंग आपके ब्राउज़र में होती है (पूर्णतः सुरक्षित और निजी)।
+  </div>
+
+  <script>
+    // Initialize jsPDF from UMD bundle
+    const { jsPDF } = window.jspdf;
+    
+    // Update resume preview in real-time
+    function updateResume() {
+      document.getElementById('preview-name').textContent = document.getElementById('name').value || 'राहुल शर्मा';
+      document.getElementById('preview-title').textContent = document.getElementById('title').value || 'सॉफ्टवेयर इंजीनियर';
+      
+      const email = document.getElementById('email').value || 'rahul@email.com';
+      const phone = document.getElementById('phone').value || '+91 9876543210';
+      const linkedin = document.getElementById('linkedin').value ? ` | 🔗 ${document.getElementById('linkedin').value}` : '';
+      document.getElementById('preview-contact').innerHTML = `📧 ${email} | 📱 ${phone}${linkedin}`;
+      
+      document.getElementById('preview-summary').textContent = document.getElementById('summary').value || 
+        'प्रतिभाशाली सॉफ्टवेयर इंजीनियर जिन्हें उच्च-गुणवत्ता वाले कोड लिखने और टीम के साथ मिलकर काम करने में अनुभव है। नवीनतम तकनीकों के प्रति उत्सुक।';
+      
+      // Process Experience
+      const expText = document.getElementById('experience').value;
+      const expPreview = document.querySelector('.section-title:contains("अनुभव") + div');
+      if (expPreview) {
+        if (expText) {
+          const lines = expText.split('\n').filter(line => line.trim());
+          let html = '';
+          lines.forEach(line => {
+            if (line.includes(',')) {
+              const parts = line.split(',');
+              html += `<div class="experience-item">
+                <div class="job-title">${parts[0]?.trim() || ''}</div>
+                <div class="company">${parts[1]?.trim() || ''}</div>
+                <div class="date">${parts[2]?.trim() || ''}</div>
+                <div>${parts.slice(3).join(',').trim() || 'विवरण'}</div>
+              </div>`;
+            } else {
+              html += `<div class="experience-item">${line}</div>`;
+            }
+          });
+          expPreview.innerHTML = html || 'अनुभव दर्ज करें';
+        } else {
+          expPreview.innerHTML = `<div class="experience-item">
+            <div class="job-title">टेक सॉल्यूशंस प्राइवेट लिमिटेड</div>
+            <div class="company">सीनियर डेवलपर</div>
+            <div class="date">जनवरी 2020 - वर्तमान</div>
+            <div>प्रमुख प्रोजेक्ट्स पर काम किया, टीम को मेंटर किया, और प्रदर्शन में 30% सुधार किया।</div>
+          </div>`;
+        }
+      }
+      
+      // Process Education
+      const eduText = document.getElementById('education').value;
+      const eduPreview = document.querySelector('.section-title:contains("शिक्षा") + div');
+      if (eduPreview) {
+        if (eduText) {
+          const lines = eduText.split('\n').filter(line => line.trim());
+          let html = '';
+          lines.forEach(line => {
+            if (line.includes(',')) {
+              const parts = line.split(',');
+              html += `<div class="education-item">
+                <div class="degree">${parts[0]?.trim() || ''}</div>
+                <div class="university">${parts[1]?.trim() || ''}</div>
+                <div class="date">${parts[2]?.trim() || ''}</div>
+                <div>${parts.slice(3).join(',').trim() || ''}</div>
+              </div>`;
+            } else {
+              html += `<div class="education-item">${line}</div>`;
+            }
+          });
+          eduPreview.innerHTML = html || 'शिक्षा दर्ज करें';
+        } else {
+          eduPreview.innerHTML = `<div class="education-item">
+            <div class="degree">बी.टेक इन कंप्यूटर साइंस</div>
+            <div class="university">दिल्ली विश्वविद्यालय</div>
+            <div class="date">2016 - 2020</div>
+          </div>`;
+        }
+      }
+      
+      // Process Skills
+      const skillsText = document.getElementById('skills').value || 'JavaScript, React, Python, टीम लीडरशिप, हिंदी, अंग्रेज़ी';
+      const skillsArr = skillsText.split(',').map(s => s.trim()).filter(s => s);
+      const skillsHTML = skillsArr.map(skill => `<span class="skill-tag">${skill}</span>`).join('');
+      document.getElementById('preview-skills').innerHTML = skillsHTML || '<span class="skill-tag">कौशल दर्ज करें</span>';
+    }
+    
+    // Fix for :contains selector (not standard)
+    if (!CSS.supports('selector(:contains("a"))')) {
+      // Fallback: use class-based selection for education/experience sections
+      document.querySelectorAll('.section').forEach(section => {
+        const title = section.querySelector('.section-title');
+        if (title?.textContent.includes('अनुभव')) section.id = 'exp-section';
+        if (title?.textContent.includes('शिक्षा')) section.id = 'edu-section';
+      });
+    }
+    
+    // Download PDF function
+    function downloadPDF() {
+      const loading = document.getElementById('loading');
+      loading.style.display = 'block';
+      
+      // Temporarily adjust preview for better PDF capture
+      const resume = document.getElementById('resume-preview');
+      const originalWidth = resume.style.width;
+      resume.style.width = '210mm';
+      
+      html2canvas(resume, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        onclone: (document) => {
+          document.getElementById('resume-preview').style.width = '210mm';
+        }
+      }).then(canvas => {
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF({
+          orientation: 'portrait',
+          unit: 'mm',
+          format: 'a4'
+        });
+        
+        const imgWidth = 210; // A4 width in mm
+        const pageHeight = 297; // A4 height in mm
+        const imgHeight = canvas.height * imgWidth / canvas.width;
+        let heightLeft = imgHeight;
+        
+        pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+        
+        let position = heightLeft - imgHeight + 15;
+        while (heightLeft >= 0) {
+          pdf.addPage();
+          pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+          heightLeft -= pageHeight;
+          position -= imgHeight;
+        }
+        
+        // Reset preview width
+        resume.style.width = originalWidth;
+        loading.style.display = 'none';
+        
+        // Save PDF with Hindi-friendly filename (browser handles encoding)
+        pdf.save(`Resume_${new Date().getTime()}.pdf`);
+        
+        // Show success message
+        alert('✅ रिज़्यूमे PDF सफलतापूर्वक डाउनलोड हो गया!\n(फ़ाइल नाम: Resume_*.pdf)');
+      }).catch(error => {
+        console.error('PDF बनाने में त्रुटि:', error);
+        alert('⚠️ PDF बनाने में समस्या आई। कृपया दोबारा कोशिश करें।');
+        loading.style.display = 'none';
+        resume.style.width = originalWidth;
+      });
+    }
+    
+    // Initialize with default preview
+    window.onload = updateResume;
+    
+    // Add helper for :contains selector fallback
+    document.querySelectorAll('.section-title').forEach(el => {
+      if (el.textContent.includes('अनुभव')) el.parentElement.id = 'exp-section';
+      if (el.textContent.includes('शिक्षा')) el.parentElement.id = 'edu-section';
+    });
+  </script>
+</body>
+</html>
